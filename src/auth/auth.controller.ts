@@ -4,7 +4,9 @@ import {
     Controller,
     Get,
     HttpCode,
+    NotFoundException,
     Param,
+    Patch,
     Post,
     Put,
     Req,
@@ -20,8 +22,13 @@ import { JwtAccessAuthGuard } from '../common/guards/jwt-access.guard';
 import { JwtRefreshAuthGuard } from '../common/guards/jwt-refresh.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { RequestWithUser } from '../common/types/request-with-user.type';
-import { UNAUTHORIZED_ERROR, USER_ALREADY_EXISTS_ERROR } from './auth.constants';
+import {
+    UNAUTHORIZED_ERROR,
+    USER_ALREADY_EXISTS_ERROR,
+    USER_NOT_FOUND_ERROR,
+} from './auth.constants';
 import { AuthService } from './auth.service';
+import { SetRoleDto } from './dto/set-role.dto';
 import { SignInDto } from './dto/signin.dto';
 import { SignUpDto } from './dto/signup.dto';
 import { UserModel } from './user.model';
@@ -96,15 +103,19 @@ export class AuthController {
         return await this.authService.getUsersList();
     }
 
-    // @UseGuards(RolesGuard([Roles.Admin]))
-    // @Put('role/:id/:role')
-    // async setRole(@Param('role') newRole: Roles, @Param('id') userId: string) {
-    //     const { id, username, email, role } = await this.authService.setRole(userId, newRole);
-    //     return {
-    //         id,
-    //         username,
-    //         email,
-    //         role,
-    //     };
-    // }
+    @UseGuards(RolesGuard([Roles.Admin]))
+    @Patch('role')
+    async setRole(@Body() dto: SetRoleDto) {
+        const user = await this.authService.setRole(dto.userId, dto.role);
+        if (!user) {
+            throw new NotFoundException(USER_NOT_FOUND_ERROR);
+        }
+        const { _id, username, email, role } = user;
+        return {
+            _id,
+            username,
+            email,
+            role,
+        };
+    }
 }

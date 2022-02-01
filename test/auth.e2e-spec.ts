@@ -21,6 +21,7 @@ describe('AuthController (e2e)', () => {
     }
     let admin: TestUser;
     let user: TestUser;
+    let userId: string;
 
     beforeAll(async () => {
         const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -72,6 +73,8 @@ describe('AuthController (e2e)', () => {
             const response = await request(app.getHttpServer())
                 .post('/auth/sign-up')
                 .send(user.dto);
+
+            userId = response.body._id;
 
             expect(response.statusCode).toBe(201);
             expect(response.body).toEqual(
@@ -323,7 +326,71 @@ describe('AuthController (e2e)', () => {
         });
     });
 
-    describe('/api/auth/role (PUT)', () => {
-        test.todo('(SUCCESS) should return 203');
+    describe('/api/auth/role (PATCH)', () => {
+        test('(SUCCESS) [by Admin]  should return 200 and new user data', async () => {
+            const response = await request(app.getHttpServer())
+                .patch('/auth/role')
+                .set('Authorization', `Bearer ${admin.accessToken}`)
+                .send({
+                    userId: userId,
+                    role: Roles.User,
+                });
+
+            expect(response.statusCode).toBe(200);
+            expect(response.body).toEqual(
+                expect.objectContaining({
+                    _id: expect.any(String),
+                    email: expect.stringContaining(user.dto.email),
+                    role: expect.stringContaining(Roles.User),
+                    username: expect.stringContaining(user.dto.username),
+                }),
+            );
+        });
+
+        test('(VALIDATION) should return 400 with message: ["userId must be a mongodb id", "userId must be a string", "userId should not be empty"]', async () => {
+            const response = await request(app.getHttpServer())
+                .patch('/auth/role')
+                .set('Authorization', `Bearer ${admin.accessToken}`)
+                .send({
+                    userId: undefined,
+                    role: Roles.User,
+                });
+
+            expect(response.statusCode).toBe(400);
+            expect(response.body.message).toEqual([
+                'userId must be a mongodb id',
+                'userId must be a string',
+                'userId should not be empty',
+            ]);
+        });
+
+        test('(VALIDATION) should return 400 with message: ["role must be a string", "role must be a valid enum value", "role should not be empty",]', async () => {
+            const response = await request(app.getHttpServer())
+                .patch('/auth/role')
+                .set('Authorization', `Bearer ${admin.accessToken}`)
+                .send({
+                    userId,
+                    role: undefined,
+                });
+
+            expect(response.statusCode).toBe(400);
+            expect(response.body.message).toEqual([
+                'role must be a string',
+                'role must be a valid enum value',
+                'role should not be empty',
+            ]);
+        });
+
+        test('(ERROR) [by User] should return 403 because route only for Admin', async () => {
+            const response = await request(app.getHttpServer())
+                .patch('/auth/role')
+                .set('Authorization', `Bearer ${user.accessToken}`)
+                .send({
+                    userId: userId,
+                    role: Roles.User,
+                });
+
+            expect(response.statusCode).toBe(403);
+        });
     });
 });

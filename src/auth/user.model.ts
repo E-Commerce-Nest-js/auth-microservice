@@ -1,6 +1,6 @@
 import { prop } from '@typegoose/typegoose';
 import { Base, TimeStamps } from '@typegoose/typegoose/lib/defaultClasses';
-import { Roles } from 'src/common/types/roles.type';
+import { Roles } from '../common/types/roles.type';
 
 export interface UserModel extends Base {}
 
