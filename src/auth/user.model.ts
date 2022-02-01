@@ -1,11 +1,6 @@
 import { prop } from '@typegoose/typegoose';
 import { Base, TimeStamps } from '@typegoose/typegoose/lib/defaultClasses';
-
-export enum Roles {
-    Admin = 'admin',
-    Manager = 'manager',
-    User = 'user',
-}
+import { Roles } from 'src/common/types/roles.type';
 
 export interface UserModel extends Base {}
 

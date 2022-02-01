@@ -4,7 +4,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ModelType } from '@typegoose/typegoose/lib/types';
 import { compare, genSalt, hash } from 'bcryptjs';
 import { InjectModel } from 'nestjs-typegoose';
-import { UserModel, Roles } from './user.model';
+import { UserModel } from './user.model';
+import { Roles } from '../common/types/roles.type';
 import { SignUpDto } from './dto/signup.dto';
 import { ConfigService } from '@nestjs/config';
 

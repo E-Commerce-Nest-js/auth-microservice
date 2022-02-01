@@ -7,7 +7,7 @@ import { getConnectionToken } from 'nestjs-typegoose';
 import * as cookieParser from 'cookie-parser';
 import { SignUpDto } from 'src/auth/dto/signup.dto';
 import { ConfigService } from '@nestjs/config';
-import { Roles } from '../src/auth/user.model';
+import { Roles } from '../src/common/types/roles.type';
 import { AuthService } from '../src/auth/auth.service';
 
 describe('AuthController (e2e)', () => {

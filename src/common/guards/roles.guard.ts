@@ -1,5 +1,5 @@
 import { CanActivate, ExecutionContext, mixin, Type } from '@nestjs/common';
-import { Roles } from '../../auth/user.model';
+import { Roles } from '../types/roles.type';
 import { AccessTokenPayloadDto } from '../dto/at-payload.dto';
 import { JwtAccessAuthGuard } from './jwt-access.guard';
 

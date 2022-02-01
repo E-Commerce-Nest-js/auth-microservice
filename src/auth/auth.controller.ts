@@ -24,7 +24,8 @@ import { UNAUTHORIZED_ERROR, USER_ALREADY_EXISTS_ERROR } from './auth.constants'
 import { AuthService } from './auth.service';
 import { SignInDto } from './dto/signin.dto';
 import { SignUpDto } from './dto/signup.dto';
-import { Roles, UserModel } from './user.model';
+import { UserModel } from './user.model';
+import { Roles } from '../common/types/roles.type';
 
 @Controller('auth')
 export class AuthController {
@@ -38,7 +39,7 @@ export class AuthController {
             throw new UnprocessableEntityException(USER_ALREADY_EXISTS_ERROR);
         }
         const user = await this.authService.createUser(dto);
-        // _doc have user data from mongo
+        // _doc has user data from mongo
         return { ...user['_doc'], passwordHash: undefined };
     }
 
@@ -85,6 +86,7 @@ export class AuthController {
     @Get('iam')
     async getUser(@Req() req: RequestWithUser<AccessTokenPayloadDto>) {
         const user = await this.authService.getUserById(req.user.id);
+        // _doc has user data from mongo
         return { ...user['_doc'], passwordHash: undefined, refresh_token: undefined };
     }
 
