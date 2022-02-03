@@ -8,6 +8,8 @@ import { UserModel } from './user.model';
 import { Roles } from '../common/types/roles.type';
 import { SignUpDto } from './dto/signup.dto';
 import { ConfigService } from '@nestjs/config';
+import { RMQService } from 'nestjs-rmq';
+import { MsgUserCreatedDto } from './dto/msg-user-created.dto';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +17,7 @@ export class AuthService {
         @InjectModel(UserModel) private readonly userModel: ModelType<UserModel>,
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
+        private readonly rmq: RMQService,
     ) {
         this.createAdminIfNotExists()
             .then((data) =>
@@ -41,6 +44,12 @@ export class AuthService {
             username: adminDto.username,
             role: adminDto.role,
         });
+
+        this.sendUserCreated({
+            userId: newAdmin._id.toString(),
+            email: newAdmin.email,
+        });
+
         return newAdmin.save();
     }
 
@@ -64,6 +73,12 @@ export class AuthService {
             username: dto.username,
             role: Roles.User,
         });
+
+        this.sendUserCreated({
+            userId: newUser._id.toString(),
+            email: newUser.email,
+        });
+
         return newUser.save();
     }
 
@@ -122,5 +137,13 @@ export class AuthService {
 
     getCleanCookieForRefreshToken() {
         return 'Refresh=; HttpOnly; Path=/; Max-Age=0';
+    }
+
+    async sendUserCreated(user: MsgUserCreatedDto) {
+        const message: MsgUserCreatedDto = {
+            userId: user.userId,
+            email: user.email,
+        };
+        this.rmq.notify('user.created', message);
     }
 }

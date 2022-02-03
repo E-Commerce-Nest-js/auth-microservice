@@ -290,6 +290,7 @@ describe('AuthController (e2e)', () => {
             expect(response.statusCode).toBe(401);
         });
     });
+
     describe('/api/auth/list (GET)', () => {
         test('(SUCCESS) [by Admin] should return 200 with list of users', async () => {
             const response = await request(app.getHttpServer())

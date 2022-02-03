@@ -9,6 +9,8 @@ import { PassportModule } from '@nestjs/passport';
 import { getJwtConfig } from '../configs/jwt.config';
 import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
+import { RMQModule } from 'nestjs-rmq';
+import { getRmqConfig } from '../configs/rabbitmq.config';
 
 @Module({
     imports: [
@@ -20,12 +22,17 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
                 },
             },
         ]),
-        ConfigModule,
         JwtModule.registerAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
             useFactory: getJwtConfig,
         }),
+        RMQModule.forRootAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: getRmqConfig,
+        }),
+        ConfigModule,
         PassportModule,
     ],
     providers: [AuthService, JwtAccessStrategy, JwtRefreshStrategy],
