@@ -3,12 +3,15 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { Connection, disconnect } from 'mongoose';
-import { getConnectionToken } from 'nestjs-typegoose';
+import { getConnectionToken, TypegooseModule } from 'nestjs-typegoose';
 import * as cookieParser from 'cookie-parser';
 import { SignUpDto } from 'src/auth/dto/signup.dto';
-import { ConfigService } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Roles } from '../src/common/types/roles.type';
 import { AuthService } from '../src/auth/auth.service';
+import { AuthModule } from '../src/auth/auth.module';
+import { getMongoConfig } from '../src/configs/mongo.config';
+import { RMQModule } from 'nestjs-rmq';
 
 describe('AuthController (e2e)', () => {
     let app: INestApplication;
@@ -24,20 +27,29 @@ describe('AuthController (e2e)', () => {
     let userId: string;
 
     beforeAll(async () => {
-        const moduleFixture: TestingModule = await Test.createTestingModule({
-            imports: [AppModule],
+        const testAppModule: TestingModule = await Test.createTestingModule({
+            imports: [
+                AuthModule,
+                ConfigModule.forRoot(),
+                TypegooseModule.forRootAsync({
+                    imports: [ConfigModule],
+                    inject: [ConfigService],
+                    useFactory: getMongoConfig,
+                }),
+                RMQModule.forTest({}),
+            ],
         }).compile();
 
-        app = moduleFixture.createNestApplication();
+        app = testAppModule.createNestApplication();
         app.useGlobalPipes(new ValidationPipe());
         app.use(cookieParser());
         await app.init();
 
-        connection = await moduleFixture.get(getConnectionToken());
+        connection = await testAppModule.get(getConnectionToken());
         await connection.dropDatabase();
 
-        configService = await moduleFixture.get(ConfigService);
-        const authService = moduleFixture.get(AuthService);
+        configService = await testAppModule.get(ConfigService);
+        const authService = testAppModule.get(AuthService);
         await authService.createAdminIfNotExists();
 
         const adminEmail = configService.get('ADMIN_EMAIL') || 'admin@mail.com';

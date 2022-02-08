@@ -27,11 +27,6 @@ import { getRmqConfig } from '../configs/rabbitmq.config';
             inject: [ConfigService],
             useFactory: getJwtConfig,
         }),
-        RMQModule.forRootAsync({
-            imports: [ConfigModule],
-            inject: [ConfigService],
-            useFactory: getRmqConfig,
-        }),
         ConfigModule,
         PassportModule,
     ],
