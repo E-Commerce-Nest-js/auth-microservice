@@ -98,7 +98,7 @@ export class AuthController {
     }
 
     @UseGuards(RolesGuard([Roles.Admin, Roles.Manager]))
-    @Get('list')
+    @Get('/users')
     async getUsersList() {
         return await this.authService.getUsersList();
     }

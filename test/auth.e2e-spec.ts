@@ -303,10 +303,10 @@ describe('AuthController (e2e)', () => {
         });
     });
 
-    describe('/api/auth/list (GET)', () => {
+    describe('/api/auth/users (GET)', () => {
         test('(SUCCESS) [by Admin] should return 200 with list of users', async () => {
             const response = await request(app.getHttpServer())
-                .get('/auth/list')
+                .get('/auth/users')
                 .set('Authorization', `Bearer ${admin.accessToken}`);
 
             expect(response.statusCode).toBe(200);
@@ -324,7 +324,7 @@ describe('AuthController (e2e)', () => {
 
         test('(ERROR) [by User] should return 403 because route only for Admin', async () => {
             const response = await request(app.getHttpServer())
-                .get('/auth/list')
+                .get('/auth/users')
                 .set('Authorization', `Bearer ${user.accessToken}`);
 
             expect(response.statusCode).toBe(403);
@@ -332,7 +332,7 @@ describe('AuthController (e2e)', () => {
 
         test('(ERROR) should return 401 because access_token invalid', async () => {
             const response = await request(app.getHttpServer())
-                .get('/auth/list')
+                .get('/auth/users')
                 .set('Authorization', `Bearer INVALID.ACCESS.TOKEN`);
 
             expect(response.statusCode).toBe(401);
