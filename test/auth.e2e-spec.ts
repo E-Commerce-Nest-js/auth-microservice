@@ -199,7 +199,7 @@ describe('AuthController (e2e)', () => {
             ]);
         });
 
-        test('(ERROR) should return 401 "invalid login or password" when invalid email', async () => {
+        test('(ERROR) should return 401 "wrong login or password" when wrong email', async () => {
             const response = await request(app.getHttpServer())
                 .post('/auth/sign-in')
                 .send({ ...user.dto, email: 'wrong@wrong.com' });
@@ -207,7 +207,7 @@ describe('AuthController (e2e)', () => {
             expect(response.statusCode).toBe(401);
         });
 
-        test('(ERROR) should return 401 "invalid login or password" when invalid password', async () => {
+        test('(ERROR) should return 401 "wrong login or password" when wrong password', async () => {
             const response = await request(app.getHttpServer())
                 .post('/auth/sign-in')
                 .send({ ...user.dto, password: 'wrongpassword' });
@@ -217,7 +217,7 @@ describe('AuthController (e2e)', () => {
     });
 
     describe('/api/auth/refresh (POST)', () => {
-        test('(SUCCESS) should refresh', async () => {
+        test('(SUCCESS) should return 200 and refresh tokens', async () => {
             const response = await request(app.getHttpServer())
                 .post('/auth/refresh')
                 .set('Cookie', user.refreshCookie);
@@ -404,6 +404,14 @@ describe('AuthController (e2e)', () => {
                 });
 
             expect(response.statusCode).toBe(403);
+        });
+
+        test('(ERROR) should return 401 because access_token invalid', async () => {
+            const response = await request(app.getHttpServer())
+                .patch('/auth/role')
+                .set('Authorization', `Bearer INVALID.ACCESS.TOKEN`);
+
+            expect(response.statusCode).toBe(401);
         });
     });
 });
