@@ -33,6 +33,7 @@ import { SignInDto } from './dto/signin.dto';
 import { SignUpDto } from './dto/signup.dto';
 import { UserModel } from './user.model';
 import { Roles } from '../common/types/roles.type';
+import { TokenResponseDto } from './dto/token-response.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -53,7 +54,7 @@ export class AuthController {
     @UsePipes(new ValidationPipe())
     @HttpCode(200)
     @Post('sign-in')
-    async signIn(@Req() req: Request, @Body() dto: SignInDto) {
+    async signIn(@Req() req: Request, @Body() dto: SignInDto): Promise<TokenResponseDto> {
         const user = await this.authService.validateUser(dto.email, dto.password);
         if (!user) {
             throw new UnauthorizedException(UNAUTHORIZED_ERROR);
@@ -62,7 +63,8 @@ export class AuthController {
         const refresh = await this.authService.getCookieWithRefreshToken(userId);
         await this.authService.setCurrentRefreshToken(refresh.token, userId);
         req.res.setHeader('Set-Cookie', refresh.cookie);
-        return this.authService.getAccessToken(user);
+        const access_token = await this.authService.getAccessToken(user);
+        return { access_token };
     }
 
     @UseGuards(JwtAccessAuthGuard)
@@ -77,16 +79,17 @@ export class AuthController {
 
     @UseGuards(JwtRefreshAuthGuard)
     @Post('refresh')
-    async refreshTokens(@Req() req: RequestWithUser<UserModel>) {
+    async refreshTokens(@Req() req: RequestWithUser<UserModel>): Promise<TokenResponseDto> {
         const user = await this.authService.getUserById(req.user.id);
         if (!user) {
             throw new UnauthorizedException(UNAUTHORIZED_ERROR);
         }
         const userId = user._id.toString();
-        const refreshToken = await this.authService.getCookieWithRefreshToken(userId);
-        await this.authService.setCurrentRefreshToken(refreshToken.token, userId);
-        req.res.setHeader('Set-Cookie', refreshToken.cookie);
-        return this.authService.getAccessToken(user);
+        const refresh = await this.authService.getCookieWithRefreshToken(userId);
+        await this.authService.setCurrentRefreshToken(refresh.token, userId);
+        req.res.setHeader('Set-Cookie', refresh.cookie);
+        const access_token = await this.authService.getAccessToken(user);
+        return { access_token };
     }
 
     @UseGuards(JwtAccessAuthGuard)

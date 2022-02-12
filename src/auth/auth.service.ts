@@ -96,9 +96,7 @@ export class AuthService {
 
     async getAccessToken(user: UserModel) {
         const payload = { email: user.email, id: user._id, role: user.role };
-        return {
-            access_token: await this.jwtService.signAsync(payload),
-        };
+        return this.jwtService.signAsync(payload);
     }
 
     async getCookieWithRefreshToken(id: string) {
