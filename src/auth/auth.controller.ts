@@ -13,8 +13,6 @@ import {
     UnauthorizedException,
     UnprocessableEntityException,
     UseGuards,
-    UsePipes,
-    ValidationPipe,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AccessTokenPayloadDto } from '../common/dto/at-payload.dto';
@@ -33,14 +31,19 @@ import { SignInDto } from './dto/signin.dto';
 import { SignUpDto } from './dto/signup.dto';
 import { UserModel } from './user.model';
 import { Roles } from '../common/types/roles.type';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { TokenResponseDto } from './dto/token-response.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
-    @UsePipes(new ValidationPipe())
+    @ApiOperation({ summary: 'Sign Up' })
+    @ApiResponse({ status: 400, description: 'Return validation error' })
+    @ApiResponse({ status: 422, description: 'User already exists' })
+    @ApiResponse({ status: 201, description: 'Return created user', type: UserResponseDto })
     @Post('sign-up')
     async signUp(@Body() dto: SignUpDto): Promise<UserResponseDto> {
         const oldUser = await this.authService.getUserByEmail(dto.email);
@@ -52,7 +55,19 @@ export class AuthController {
         return { ...user['_doc'], passwordHash: undefined };
     }
 
-    @UsePipes(new ValidationPipe())
+    @ApiOperation({ summary: 'Sign In' })
+    @ApiResponse({ status: 400, description: 'Return validation error' })
+    @ApiResponse({ status: 401, description: 'Wrong login or password' })
+    @ApiResponse({
+        status: 200,
+        description: 'Return Access-Token in the body and Refresh-Token in the cookie',
+        headers: {
+            'Set-Cookie': {
+                description: '"Refresh=${token}; HttpOnly; Path=/; Max-Age=${expirationTime}"',
+            },
+        },
+        type: TokenResponseDto,
+    })
     @HttpCode(200)
     @Post('sign-in')
     async signIn(@Req() req: Request, @Body() dto: SignInDto): Promise<TokenResponseDto> {
@@ -68,6 +83,13 @@ export class AuthController {
         return { access_token };
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Sign Out',
+        description: 'This can only be done by the logged.',
+    })
+    @ApiResponse({ status: 401, description: 'Invalid Access-Token' })
+    @ApiResponse({ status: 200, description: 'Clean Refresh-Token in cookie' })
     @UseGuards(JwtAccessAuthGuard)
     @Post('sign-out')
     @HttpCode(200)
@@ -78,6 +100,23 @@ export class AuthController {
         req.res.end();
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Refresh tokens',
+        description:
+            'This can only be done by the logged. Refresh tokens when access token expires.',
+    })
+    @ApiResponse({ status: 401, description: 'Invalid Refresh-Token in cookie' })
+    @ApiResponse({
+        status: 200,
+        description: 'Return Access-Token in the body and Refresh-Token in the cookie',
+        headers: {
+            'Set-Cookie': {
+                description: '"Refresh=${token}; HttpOnly; Path=/; Max-Age=${expirationTime}"',
+            },
+        },
+        type: TokenResponseDto,
+    })
     @UseGuards(JwtRefreshAuthGuard)
     @Post('refresh')
     async refreshTokens(@Req() req: RequestWithUser<UserModel>): Promise<TokenResponseDto> {
@@ -93,6 +132,13 @@ export class AuthController {
         return { access_token };
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Get own data',
+        description: 'This can only be done by the logged.',
+    })
+    @ApiResponse({ status: 401, description: 'Invalid Access-Token' })
+    @ApiResponse({ status: 200, description: 'Return own data', type: UserResponseDto })
     @UseGuards(JwtAccessAuthGuard)
     @Get('iam')
     async getUser(@Req() req: RequestWithUser<AccessTokenPayloadDto>): Promise<UserResponseDto> {
@@ -101,12 +147,38 @@ export class AuthController {
         return { ...user['_doc'], passwordHash: undefined, refresh_token: undefined };
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Get array of users data',
+        description: 'This can only be done by the logged in admin or manager.',
+    })
+    @ApiResponse({ status: 401, description: 'Invalid Access-Token' })
+    @ApiResponse({ status: 403, description: 'Route for specific roles [admin, manager]' })
+    @ApiResponse({
+        status: 200,
+        description: 'Return array of users',
+        type: UserResponseDto,
+        isArray: true,
+    })
     @UseGuards(RolesGuard([Roles.Admin, Roles.Manager]))
     @Get('/users')
     async getUsersList() {
         return await this.authService.getUsersList();
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Change role of user',
+        description: 'This can only be done by the logged in admin.',
+    })
+    @ApiResponse({ status: 400, description: 'Return validation error' })
+    @ApiResponse({ status: 401, description: 'Invalid Access-Token' })
+    @ApiResponse({ status: 403, description: 'Route for specific roles [admin, manager]' })
+    @ApiResponse({
+        status: 200,
+        description: 'Return user data with changed role',
+        type: UserResponseDto,
+    })
     @UseGuards(RolesGuard([Roles.Admin]))
     @Patch('role')
     async setRole(@Body() dto: SetRoleDto): Promise<UserResponseDto> {
