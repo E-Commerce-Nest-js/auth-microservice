@@ -34,6 +34,7 @@ import { SignUpDto } from './dto/signup.dto';
 import { UserModel } from './user.model';
 import { Roles } from '../common/types/roles.type';
 import { TokenResponseDto } from './dto/token-response.dto';
+import { UserResponseDto } from './dto/user-response.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -41,7 +42,7 @@ export class AuthController {
 
     @UsePipes(new ValidationPipe())
     @Post('sign-up')
-    async signUp(@Body() dto: SignUpDto) {
+    async signUp(@Body() dto: SignUpDto): Promise<UserResponseDto> {
         const oldUser = await this.authService.getUserByEmail(dto.email);
         if (oldUser) {
             throw new UnprocessableEntityException(USER_ALREADY_EXISTS_ERROR);
@@ -94,7 +95,7 @@ export class AuthController {
 
     @UseGuards(JwtAccessAuthGuard)
     @Get('iam')
-    async getUser(@Req() req: RequestWithUser<AccessTokenPayloadDto>) {
+    async getUser(@Req() req: RequestWithUser<AccessTokenPayloadDto>): Promise<UserResponseDto> {
         const user = await this.authService.getUserById(req.user.id);
         // _doc has user data from mongo
         return { ...user['_doc'], passwordHash: undefined, refresh_token: undefined };
@@ -108,17 +109,11 @@ export class AuthController {
 
     @UseGuards(RolesGuard([Roles.Admin]))
     @Patch('role')
-    async setRole(@Body() dto: SetRoleDto) {
+    async setRole(@Body() dto: SetRoleDto): Promise<UserResponseDto> {
         const user = await this.authService.setRole(dto.userId, dto.role);
         if (!user) {
             throw new NotFoundException(USER_NOT_FOUND_ERROR);
         }
-        const { _id, username, email, role } = user;
-        return {
-            _id,
-            username,
-            email,
-            role,
-        };
+        return { ...user['_doc'], passwordHash: undefined, refresh_token: undefined };
     }
 }
