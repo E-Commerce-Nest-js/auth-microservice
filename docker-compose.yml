@@ -21,3 +21,32 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=$MONGO_PASSWORD
     ports:
       - $MONGO_PORT_TEST:27017
+
+  rabbitmq:
+    image: rabbitmq:3.8-management-alpine
+    container_name: rabbitmq
+    restart: always
+    volumes:
+      - ./docker-data/rabbitmq/data/:/var/lib/rabbitmq/
+      - ./docker-data/rabbitmq/logs/:/var/log/rabbitmq/
+    ports:
+      - 5672:5672
+      - 15672:15672
+    
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: auth-service
+    restart: always
+    volumes:
+      - .:/auth-microservice
+      - node_modules:/auth-microservice/node_modules
+    ports:
+      - 3000:3000
+    depends_on:
+      - mongo
+      - rabbitmq
+
+volumes:
+    node_modules:
