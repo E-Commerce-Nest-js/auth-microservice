@@ -10,5 +10,5 @@ export class SetRoleDto {
     @IsNotEmpty()
     @IsEnum(Roles)
     @IsString()
-    role: string;
+    role: Roles;
 }
